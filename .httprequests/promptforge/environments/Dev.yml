@@ -1,0 +1,4 @@
+name: Dev
+variables:
+  - name: api-gateway-domain
+    value: http://localhost:8080
