@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/application"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/infrastructure/postgres"
@@ -12,8 +14,6 @@ import (
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/infrastructure/uuid"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/server"
 	httptransport "github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/transport/http"
-	"golang.org/x/crypto/bcrypt"
-
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -38,7 +38,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = db.Ping()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err = db.PingContext(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,7 +49,7 @@ func main() {
 	defer db.Close()
 
 	userRepository := postgres.NewPostgresUserRepository(db)
-	passwordHasher := security.NewBcryptPasswordHasher(bcrypt.DefaultCost)
+	passwordHasher := security.NewBcryptPasswordHasher()
 	userIDGenerator := uuid.NewUserIDGenerator()
 	registerUserService := application.NewRegisterUserService(
 		userRepository,
@@ -58,8 +61,12 @@ func main() {
 	authHandler := httptransport.NewAuthHandler(registerUserService)
 	app := server.NewApplication(healthHandler, authHandler)
 
-	log.Println("Auth Service running on :8081")
-	err = http.ListenAndServe(":8081", app.Routes())
+	addr := os.Getenv("ADDR")
+	if addr == "" {
+		log.Fatal("ADDR env var required")
+	}
+	log.Printf("Auth Service running on %s", addr)
+	err = http.ListenAndServe(addr, app.Routes())
 	if err != nil {
 		log.Fatal(err)
 	}
