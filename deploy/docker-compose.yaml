@@ -19,8 +19,29 @@ services:
       context: ../services/auth-service
     environment:
       ADDR: ":8081"
+      AUTH_DATABASE_DSN: "postgres://auth_user:auth_password@auth-db:5432/auth_service?sslmode=disable"
+      AUTH_MIGRATIONS_PATH: "file://migrations"
     expose:
       - "8081"
+    depends_on:
+      auth-db:
+        condition: service_healthy
+
+  auth-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+      POSTGRES_DB: auth_service
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U auth_user -d auth_service" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   billing-service:
     build:
@@ -37,3 +58,6 @@ services:
       ADDR: ":8083"
     expose:
       - "8083"
+
+volumes:
+  auth-db-data:

@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{api-gateway-domain}}/api/auth/health"
+  url: "{{api-gateway-domain}}/{{auth-endpoint}}/health"
   auth: inherit
 
 settings:

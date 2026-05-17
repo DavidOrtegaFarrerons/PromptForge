@@ -2,7 +2,7 @@ FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod ./
+COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
@@ -14,6 +14,7 @@ FROM alpine:3.22
 WORKDIR /app
 
 COPY --from=builder /app/api ./api
+COPY --from=builder /app/internal/infrastructure/postgres/migrations ./migrations
 
 EXPOSE 8081
 
