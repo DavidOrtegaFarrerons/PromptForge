@@ -8,14 +8,19 @@ import (
 	"net/http"
 
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/application"
+	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/domain"
 )
 
 type AuthHandler struct {
 	registerUserService *application.RegisterUserService
+	loginUserService    *application.LoginUserService
 }
 
-func NewAuthHandler(registerUserService *application.RegisterUserService) *AuthHandler {
-	return &AuthHandler{registerUserService: registerUserService}
+func NewAuthHandler(registerUserService *application.RegisterUserService, loginUserService *application.LoginUserService) *AuthHandler {
+	return &AuthHandler{
+		registerUserService: registerUserService,
+		loginUserService:    loginUserService,
+	}
 }
 
 type registerUserResponse struct {
@@ -74,6 +79,59 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, "could not encode response", http.StatusInternalServerError)
+		return
+	}
+}
+
+type loginUserResponse struct {
+	Token string `json:"token"`
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Email    string
+		Password string
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			http.Error(w, "request body is required", http.StatusBadRequest)
+			return
+		}
+
+		http.Error(w, "invalid json body", http.StatusBadRequest)
+		return
+	}
+
+	if input.Email == "" || input.Password == "" {
+		http.Error(w, "email and password are required", http.StatusBadRequest)
+		return
+	}
+
+	token, err := h.loginUserService.Execute(
+		r.Context(),
+		application.LoginUserInput{Email: input.Email, Password: input.Password},
+	)
+
+	if err != nil {
+		if errors.Is(err, domain.ErrTokenCouldNotBeGenerated) {
+			http.Error(w, "there has been a server error, try again later", http.StatusInternalServerError)
+			return
+		}
+
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	response := loginUserResponse{Token: token}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {

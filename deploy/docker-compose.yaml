@@ -21,6 +21,7 @@ services:
       ADDR: ":8081"
       AUTH_DATABASE_DSN: "postgres://auth_user:auth_password@auth-db:5432/auth_service?sslmode=disable"
       AUTH_MIGRATIONS_PATH: "file://migrations"
+      TOKEN_SECRET: "example_token_secret"
     expose:
       - "8081"
     depends_on:

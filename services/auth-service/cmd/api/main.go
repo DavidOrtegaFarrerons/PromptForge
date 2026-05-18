@@ -11,6 +11,7 @@ import (
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/application"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/infrastructure/postgres"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/infrastructure/security"
+	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/infrastructure/token"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/infrastructure/uuid"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/server"
 	httptransport "github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/transport/http"
@@ -57,8 +58,20 @@ func main() {
 		userIDGenerator,
 	)
 
+	tokenSecret := os.Getenv("TOKEN_SECRET")
+	if tokenSecret == "" {
+		log.Fatal("TOKEN_SECRET env variable is missing")
+	}
+
+	tokenGenerator := token.NewJwtTokenGenerator([]byte(tokenSecret), 15*time.Minute)
+	loginUserService := application.NewLoginUserService(
+		userRepository,
+		passwordHasher,
+		tokenGenerator,
+	)
+
 	healthHandler := &httptransport.HealthHandler{}
-	authHandler := httptransport.NewAuthHandler(registerUserService)
+	authHandler := httptransport.NewAuthHandler(registerUserService, loginUserService)
 	app := server.NewApplication(healthHandler, authHandler)
 
 	addr := os.Getenv("ADDR")

@@ -1,5 +1,6 @@
 package application
 
 type PasswordHasher interface {
-	Hash(string) ([]byte, error)
+	Hash(password string) ([]byte, error)
+	Compare(hash, password []byte) error
 }
