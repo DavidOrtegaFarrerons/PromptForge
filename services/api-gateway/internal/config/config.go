@@ -13,7 +13,7 @@ type Config struct {
 func Load() Config {
 	authenticationSecret := env("AUTHENTICATION_TOKEN_SECRET", "")
 	if authenticationSecret == "" {
-		panic("AUTHENTICATION_SECRET is required")
+		panic("AUTHENTICATION_TOKEN_SECRET is required")
 	}
 
 	return Config{
