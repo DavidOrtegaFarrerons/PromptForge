@@ -14,8 +14,7 @@ func NewJwtTokenDecoder(secret string) *JwtTokenDecoder {
 
 func (d *JwtTokenDecoder) Decode(tokenString string) (Claims, error) {
 	var jwtClaims struct {
-		UserID string `json:"user_id"`
-		Email  string `json:"email"`
+		Email string `json:"email"`
 		jwt.RegisteredClaims
 	}
 
