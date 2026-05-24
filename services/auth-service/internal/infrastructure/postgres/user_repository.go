@@ -67,12 +67,12 @@ func (r *PostgresUserRepository) Create(ctx context.Context, user domain.User) (
 func (r *PostgresUserRepository) FindByEmail(ctx context.Context, email domain.Email) (domain.User, error) {
 	query := `SELECT id, username, email, password_hash FROM users WHERE email = $1`
 
-	var userRow userRow
+	var user userRow
 	err := r.db.QueryRowContext(ctx, query, email.Value()).Scan(
-		&userRow.ID,
-		&userRow.Username,
-		&userRow.Email,
-		&userRow.PasswordHash,
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
 	)
 
 	if err != nil {
@@ -82,5 +82,5 @@ func (r *PostgresUserRepository) FindByEmail(ctx context.Context, email domain.E
 		return domain.User{}, err
 	}
 
-	return toDomain(userRow)
+	return toDomain(user)
 }

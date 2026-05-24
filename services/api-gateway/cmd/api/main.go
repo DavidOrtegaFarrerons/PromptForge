@@ -2,18 +2,17 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/DavidOrtegaFarrerons/promptforge/services/api-gateway/internal/config"
-	"github.com/DavidOrtegaFarrerons/promptforge/services/api-gateway/internal/routes"
+	"github.com/DavidOrtegaFarrerons/promptforge/services/api-gateway/internal/middleware"
+	"github.com/DavidOrtegaFarrerons/promptforge/services/api-gateway/internal/server"
 )
 
 func main() {
-	mux := http.NewServeMux()
-	routes.Register(mux, config.Load())
+	cfg := config.Load()
 
-	log.Println("Service running on :8080")
-	err := http.ListenAndServe(":8080", mux)
+	tokenDecoder := middleware.NewJwtTokenDecoder(cfg.AuthenticationSecret)
+	err := server.NewApplication(tokenDecoder, cfg).Start()
 	if err != nil {
 		log.Fatal(err)
 	}

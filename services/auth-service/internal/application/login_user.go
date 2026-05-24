@@ -45,9 +45,9 @@ func (s *LoginUserService) Execute(ctx context.Context, input LoginUserInput) (s
 		return "", err
 	}
 
-	token, err := s.tokenGenerator.Generate(user.ID())
+	token, err := s.tokenGenerator.Generate(user.ID(), user.Email())
 	if err != nil {
-		return "", domain.ErrTokenCouldNotBeGenerated
+		return "", ErrTokenCouldNotBeGenerated
 	}
 
 	return token, nil

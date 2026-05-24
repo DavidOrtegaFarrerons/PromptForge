@@ -6,6 +6,7 @@ services:
       - "8080:8080"
     environment:
       ADDR: ":8080"
+      AUTHENTICATION_TOKEN_SECRET: "example_token_secret"
       AUTH_SERVICE_URL: "http://auth-service:8081"
       BILLING_SERVICE_URL: "http://billing-service:8082"
       CONTENT_SERVICE_URL: "http://content-service:8083"

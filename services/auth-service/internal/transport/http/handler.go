@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/application"
-	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/domain"
 )
 
 type AuthHandler struct {
@@ -119,7 +118,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		if errors.Is(err, domain.ErrTokenCouldNotBeGenerated) {
+		if errors.Is(err, application.ErrTokenCouldNotBeGenerated) {
 			http.Error(w, "there has been a server error, try again later", http.StatusInternalServerError)
 			return
 		}

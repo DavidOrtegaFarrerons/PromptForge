@@ -19,10 +19,11 @@ func NewJwtTokenGenerator(signingSecret []byte, expirationTime time.Duration) *J
 	}
 }
 
-func (t *JwtTokenGenerator) Generate(userID domain.UserID) (string, error) {
+func (t *JwtTokenGenerator) Generate(userID domain.UserID, email domain.Email) (string, error) {
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": userID,
-		"exp": time.Now().Add(t.expirationTime).Unix(),
+		"sub":   userID,
+		"email": email.Value(),
+		"exp":   time.Now().Add(t.expirationTime).Unix(),
 	}).SignedString(t.signingSecret)
 
 	if err != nil {

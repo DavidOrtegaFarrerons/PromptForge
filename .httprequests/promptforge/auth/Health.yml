@@ -6,7 +6,6 @@ info:
 http:
   method: GET
   url: "{{api-gateway-domain}}/{{auth-endpoint}}/health"
-  auth: inherit
 
 settings:
   encodeUrl: true

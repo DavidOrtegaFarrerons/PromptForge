@@ -5,16 +5,14 @@ info:
 
 http:
   method: POST
-  url: "{{api-gateway-domain}}/{{auth-endpoint}}/register"
+  url: "{{api-gateway-domain}}/{{auth-endpoint}}/login"
   body:
     type: json
     data: |-
       {
-        "username": "david",
         "email": "david@example.com",
         "password": "secret"
       }
-  auth: inherit
 
 settings:
   encodeUrl: true
