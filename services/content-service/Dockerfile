@@ -14,6 +14,8 @@ FROM alpine:3.22
 WORKDIR /app
 
 COPY --from=builder /app/api ./api
+COPY --from=builder /app/internal/infrastructure/postgres/migrations ./migrations
+
 
 EXPOSE 8083
 

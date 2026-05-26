@@ -1,0 +1,25 @@
+info:
+  name: Create Prompt
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{api-gateway-domain}}/api/content/prompt"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "",
+        "content": "This will be a very prompt that I will use as the user",
+        "tags": []
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImRhdmlkQGV4YW1wbGUuY29tIiwiZXhwIjoxNzc5Nzg2MzQ1LCJzdWIiOiIzNjcwMDk2Yy1lYWE0LTQyYTctOGI4Ni1lMzkyY2YxODFhMWEifQ.8dYRnknfvU_n_Z1SCnK5i1UqWGHzan3k5y7-nG0-Pec
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

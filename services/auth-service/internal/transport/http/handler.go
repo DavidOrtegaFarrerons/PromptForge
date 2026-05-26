@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/application"
@@ -34,8 +33,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-
-	log.Printf("Body is: %+v", r.Body)
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {

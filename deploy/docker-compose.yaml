@@ -58,8 +58,30 @@ services:
       context: ../services/content-service
     environment:
       ADDR: ":8083"
+      CONTENT_DATABASE_DSN: "postgres://content_user:content_password@content-db:5432/content_service?sslmode=disable"
+      CONTENT_MIGRATIONS_PATH: "file://migrations"
     expose:
       - "8083"
+    depends_on:
+      content-db:
+        condition: service_healthy
+
+  content-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: content_user
+      POSTGRES_PASSWORD: content_password
+      POSTGRES_DB: content_service
+    ports:
+      - "5434:5432"
+    volumes:
+      - content-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U content_user -d content_service" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   auth-db-data:
+  content-db-data:

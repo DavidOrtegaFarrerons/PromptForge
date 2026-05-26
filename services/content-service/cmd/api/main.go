@@ -1,30 +1,70 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
+	"database/sql"
 	"log"
 	"net/http"
+	"os"
+	"time"
+
+	"github.com/DavidOrtegaFarrerons/promptforge/services/content-service/internal/application"
+	"github.com/DavidOrtegaFarrerons/promptforge/services/content-service/internal/infrastructure/postgres"
+	"github.com/DavidOrtegaFarrerons/promptforge/services/content-service/internal/infrastructure/uuid"
+	"github.com/DavidOrtegaFarrerons/promptforge/services/content-service/internal/server"
+	httptransport "github.com/DavidOrtegaFarrerons/promptforge/services/content-service/internal/transport/http"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type healthResponse struct {
-	Service string `json:"service"`
-	Status  string `json:"status"`
-}
-
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
+	databaseDSN := os.Getenv("CONTENT_DATABASE_DSN")
+	if databaseDSN == "" {
+		log.Fatal("CONTENT_DATABASE_DSN is required")
+	}
 
-		json.NewEncoder(w).Encode(healthResponse{
-			Service: "content service",
-			Status:  "ok",
-		})
-	})
+	migrationsPath := os.Getenv("CONTENT_MIGRATIONS_PATH")
+	if migrationsPath == "" {
+		migrationsPath = "file://migrations"
+	}
 
-	log.Println("Content Service running on :8083")
-	err := http.ListenAndServe(":8083", mux)
+	err := postgres.RunMigrations(databaseDSN, migrationsPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := sql.Open("pgx", databaseDSN)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err = db.PingContext(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer db.Close()
+
+	promptRepository := postgres.NewPostgresPromptRepository(db)
+	promptIDGenerator := uuid.NewPromptIdGenerator()
+	createPromptService := application.NewCreatePromptService(
+		promptIDGenerator,
+		promptRepository,
+	)
+
+	healthHandler := &httptransport.HealthHandler{}
+	promptHandler := httptransport.NewPromptHandler(createPromptService)
+	app := server.NewApplication(healthHandler, promptHandler)
+
+	addr := os.Getenv("ADDR")
+	if addr == "" {
+		log.Fatal("ADDR env var required")
+	}
+	log.Printf("Content Service running on %s", addr)
+	err = http.ListenAndServe(addr, app.Routes())
 	if err != nil {
 		log.Fatal(err)
 	}
