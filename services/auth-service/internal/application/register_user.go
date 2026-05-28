@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"time"
 
 	"github.com/DavidOrtegaFarrerons/promptforge/services/auth-service/internal/domain"
 )
@@ -16,13 +17,15 @@ type RegisterUserService struct {
 	userRepository  UserRepository
 	passwordHasher  PasswordHasher
 	userIdGenerator UserIDGenerator
+	eventPublisher  EventPublisher
 }
 
-func NewRegisterUserService(userRepository UserRepository, passwordHasher PasswordHasher, userIDGenerator UserIDGenerator) *RegisterUserService {
+func NewRegisterUserService(userRepository UserRepository, passwordHasher PasswordHasher, userIDGenerator UserIDGenerator, eventPublisher EventPublisher) *RegisterUserService {
 	return &RegisterUserService{
 		userRepository:  userRepository,
 		passwordHasher:  passwordHasher,
 		userIdGenerator: userIDGenerator,
+		eventPublisher:  eventPublisher,
 	}
 }
 
@@ -48,5 +51,16 @@ func (s *RegisterUserService) Execute(ctx context.Context, input RegisterUserInp
 		return domain.User{}, err
 	}
 
-	return s.userRepository.Create(ctx, user)
+	user, err = s.userRepository.Create(ctx, user)
+	if err != nil {
+		return domain.User{}, err
+	}
+
+	userRegisteredEvent := domain.NewUserRegisteredEvent(user.ID(), user.Email(), time.Now())
+	err = s.eventPublisher.PublishUserRegistered(ctx, userRegisteredEvent)
+	if err != nil {
+		return domain.User{}, err
+	}
+
+	return user, nil
 }

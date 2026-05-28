@@ -23,10 +23,15 @@ services:
       AUTH_DATABASE_DSN: "postgres://auth_user:auth_password@auth-db:5432/auth_service?sslmode=disable"
       AUTH_MIGRATIONS_PATH: "file://migrations"
       TOKEN_SECRET: "example_token_secret"
+      AMQP_USER: guest
+      AMQP_PASSWORD: guest
+      AMQP_HOST: rabbitmq:5672
     expose:
       - "8081"
     depends_on:
       auth-db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   auth-db:
@@ -44,6 +49,22 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  rabbitmq:
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"   # AMQP protocol
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
 
   billing-service:
     build:
@@ -85,3 +106,4 @@ services:
 volumes:
   auth-db-data:
   content-db-data:
+  rabbitmq-data:
