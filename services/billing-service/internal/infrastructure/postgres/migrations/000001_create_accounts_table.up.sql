@@ -1,0 +1,7 @@
+CREATE TABLE accounts (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL UNIQUE,
+    plan TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

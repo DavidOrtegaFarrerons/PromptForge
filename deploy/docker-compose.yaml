@@ -51,28 +51,54 @@ services:
       retries: 5
 
   rabbitmq:
-    healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
     image: rabbitmq:3-management-alpine
     ports:
-      - "5672:5672"   # AMQP protocol
-      - "15672:15672" # Management UI
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   billing-service:
     build:
       context: ../services/billing-service
     environment:
       ADDR: ":8082"
+      BILLING_DATABASE_DSN: "postgres://billing_user:billing_password@billing-db:5432/billing_service?sslmode=disable"
+      BILLING_MIGRATIONS_PATH: "file://migrations"
+      AMQP_USER: guest
+      AMQP_PASSWORD: guest
+      AMQP_HOST: rabbitmq:5672
     expose:
       - "8082"
+    depends_on:
+      billing-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  billing-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: billing_user
+      POSTGRES_PASSWORD: billing_password
+      POSTGRES_DB: billing_service
+    ports:
+      - "5435:5432"
+    volumes:
+      - billing-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U billing_user -d billing_service" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   content-service:
     build:
@@ -105,5 +131,6 @@ services:
 
 volumes:
   auth-db-data:
+  billing-db-data:
   content-db-data:
   rabbitmq-data:
