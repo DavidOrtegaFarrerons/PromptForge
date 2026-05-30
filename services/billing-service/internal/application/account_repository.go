@@ -8,4 +8,6 @@ import (
 
 type AccountRepository interface {
 	Create(ctx context.Context, account domain.Account) (domain.Account, error)
+	ReservePromptSlot(ctx context.Context, userID domain.UserID) error
+	ReleasePromptSlot(ctx context.Context, userID domain.UserID) error
 }

@@ -11,14 +11,14 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type RabbitMQConsumer struct {
+type RabbitMQUserRegisteredConsumer struct {
 	c                    *amqp.Channel
 	createAccountService *application.CreateAccountService
 	accountIdGenerator   application.AccountIDGenerator
 }
 
-func NewRabbitMQConsumer(c *amqp.Channel, createAccountService *application.CreateAccountService, accountIdGenerator application.AccountIDGenerator) *RabbitMQConsumer {
-	return &RabbitMQConsumer{
+func NewRabbitMQUserRegisteredConsumer(c *amqp.Channel, createAccountService *application.CreateAccountService, accountIdGenerator application.AccountIDGenerator) *RabbitMQUserRegisteredConsumer {
+	return &RabbitMQUserRegisteredConsumer{
 		c:                    c,
 		createAccountService: createAccountService,
 		accountIdGenerator:   accountIdGenerator,
@@ -31,7 +31,7 @@ type UserRegisteredEvent struct {
 	OccurredAt time.Time `json:"occurred_at"`
 }
 
-func (c *RabbitMQConsumer) Consume() {
+func (c *RabbitMQUserRegisteredConsumer) Consume() {
 	q, err := c.c.QueueDeclare("billing.user.registered", true, false, false, false, nil)
 	if err != nil {
 		panic(err)

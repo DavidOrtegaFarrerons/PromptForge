@@ -68,7 +68,8 @@ services:
 
   billing-service:
     build:
-      context: ../services/billing-service
+      context: ../
+      dockerfile: services/billing-service/Dockerfile
     environment:
       ADDR: ":8082"
       BILLING_DATABASE_DSN: "postgres://billing_user:billing_password@billing-db:5432/billing_service?sslmode=disable"
@@ -78,6 +79,7 @@ services:
       AMQP_HOST: rabbitmq:5672
     expose:
       - "8082"
+      - "9091"
     depends_on:
       billing-db:
         condition: service_healthy
@@ -102,16 +104,20 @@ services:
 
   content-service:
     build:
-      context: ../services/content-service
+      context: ../
+      dockerfile: services/content-service/Dockerfile
     environment:
       ADDR: ":8083"
       CONTENT_DATABASE_DSN: "postgres://content_user:content_password@content-db:5432/content_service?sslmode=disable"
       CONTENT_MIGRATIONS_PATH: "file://migrations"
+      BILLING_GRPC_ADDR: "billing-service:9091"
     expose:
       - "8083"
     depends_on:
       content-db:
         condition: service_healthy
+      billing-service:
+        condition: service_started
 
   content-db:
     image: postgres:17-alpine

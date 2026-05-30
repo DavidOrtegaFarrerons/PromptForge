@@ -27,7 +27,7 @@ func (s *CreateAccountService) Execute(ctx context.Context, input CreateAccountI
 	plan := domain.Plan(input.Plan)
 	now := time.Now()
 
-	acc, err := domain.NewAccount(accountID, userID, plan, now, now)
+	acc, err := domain.NewAccount(accountID, userID, plan, 0, now, now)
 	if err != nil {
 		return domain.Account{}, err
 	}

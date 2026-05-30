@@ -1,0 +1,21 @@
+syntax = "proto3";
+package billing;
+option go_package = "github.com/DavidOrtegaFarrerons/promptforge/proto/billing";
+
+message ReservePromptSlotRequest {
+  string user_id = 1;
+}
+
+message ReservePromptSlotResponse {}
+
+message ReleasePromptSlotRequest {
+  string user_id = 1;
+}
+
+message ReleasePromptSlotResponse {}
+
+service Billing {
+
+  rpc ReservePromptSlot(ReservePromptSlotRequest) returns (ReservePromptSlotResponse) {}
+  rpc ReleasePromptSlot(ReleasePromptSlotRequest) returns (ReleasePromptSlotResponse) {}
+}

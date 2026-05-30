@@ -5,18 +5,22 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/DavidOrtegaFarrerons/promptforge/proto/billing"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/billing-service/internal/application"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/billing-service/internal/infrastructure/postgres"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/billing-service/internal/infrastructure/uuid"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/billing-service/internal/server"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/billing-service/internal/transport/amqp/rabbitmq"
+	grpctransport "github.com/DavidOrtegaFarrerons/promptforge/services/billing-service/internal/transport/grpc"
 	httptransport "github.com/DavidOrtegaFarrerons/promptforge/services/billing-service/internal/transport/http"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -81,9 +85,26 @@ func main() {
 	accountRepository := postgres.NewPostgresAccountRepository(db)
 	createAccountService := application.NewCreateAccountService(accountRepository)
 	accountIDGenerator := uuid.NewAccountIDGenerator()
-	rabbitConsumer := rabbitmq.NewRabbitMQConsumer(amqpChannel, createAccountService, accountIDGenerator)
-
+	rabbitConsumer := rabbitmq.NewRabbitMQUserRegisteredConsumer(amqpChannel, createAccountService, accountIDGenerator)
 	go rabbitConsumer.Consume()
+
+	reservePromptSlotService := application.NewReservePromptSlotService(accountRepository)
+	releasePromptSlotService := application.NewReleasePromptSlotService(accountRepository)
+	billingGRPCServer := grpctransport.NewBillingGRPCServer(reservePromptSlotService, releasePromptSlotService)
+	grpcServer := grpc.NewServer()
+	billing.RegisterBillingServer(grpcServer, billingGRPCServer)
+
+	grpcListener, err := net.Listen("tcp", ":9091")
+	if err != nil {
+		log.Fatalf("failed to listen: %s", err)
+	}
+
+	go func() {
+		log.Println("Billing gRPC server running on :9091")
+		if err = grpcServer.Serve(grpcListener); err != nil {
+			log.Fatalf("gRPC server failed: %s", err)
+		}
+	}()
 
 	app := server.NewApplication(healthHandler)
 

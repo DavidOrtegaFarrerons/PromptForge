@@ -2,6 +2,7 @@ CREATE TABLE accounts (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL UNIQUE,
     plan TEXT NOT NULL,
+    prompt_count INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -12,9 +12,11 @@ import (
 	"github.com/DavidOrtegaFarrerons/promptforge/services/content-service/internal/infrastructure/postgres"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/content-service/internal/infrastructure/uuid"
 	"github.com/DavidOrtegaFarrerons/promptforge/services/content-service/internal/server"
+	grpctransport "github.com/DavidOrtegaFarrerons/promptforge/services/content-service/internal/transport/grpc"
 	httptransport "github.com/DavidOrtegaFarrerons/promptforge/services/content-service/internal/transport/http"
-
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -48,11 +50,25 @@ func main() {
 
 	defer db.Close()
 
+	billingGRPCAddr := os.Getenv("BILLING_GRPC_ADDR")
+	if billingGRPCAddr == "" {
+		log.Fatal("BILLING_GRPC_ADDR is required")
+	}
+
+	billingConn, err := grpc.NewClient(billingGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to billing gRPC: %s", err)
+	}
+	defer billingConn.Close()
+
+	billingClient := grpctransport.NewGRPCBillingClient(billingConn)
+
 	promptRepository := postgres.NewPostgresPromptRepository(db)
 	promptIDGenerator := uuid.NewPromptIdGenerator()
 	createPromptService := application.NewCreatePromptService(
 		promptIDGenerator,
 		promptRepository,
+		billingClient,
 	)
 
 	healthHandler := &httptransport.HealthHandler{}

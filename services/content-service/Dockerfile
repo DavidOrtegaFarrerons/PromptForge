@@ -2,20 +2,22 @@ FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod ./
-RUN go mod download
+COPY services/content-service/go.mod services/content-service/go.sum ./services/content-service/
+COPY proto/billing/go.mod ./proto/billing/
 
-COPY . .
+RUN cd services/content-service && go mod download
 
-RUN go build -o api ./cmd/api
+COPY services/content-service/ ./services/content-service/
+COPY proto/billing/ ./proto/billing/
+
+RUN cd services/content-service && go build -o api ./cmd/api
 
 FROM alpine:3.22
 
 WORKDIR /app
 
-COPY --from=builder /app/api ./api
-COPY --from=builder /app/internal/infrastructure/postgres/migrations ./migrations
-
+COPY --from=builder /app/services/content-service/api ./api
+COPY --from=builder /app/services/content-service/internal/infrastructure/postgres/migrations ./migrations
 
 EXPOSE 8083
 

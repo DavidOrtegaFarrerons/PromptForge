@@ -16,12 +16,14 @@ type CreatePromptInput struct {
 type CreatePromptService struct {
 	promptIdGenerator PromptIdGenerator
 	promptRepository  PromptRepository
+	billingClient     BillingClient
 }
 
-func NewCreatePromptService(promptIdGenerator PromptIdGenerator, promptRepository PromptRepository) *CreatePromptService {
+func NewCreatePromptService(promptIdGenerator PromptIdGenerator, promptRepository PromptRepository, billingClient BillingClient) *CreatePromptService {
 	return &CreatePromptService{
 		promptIdGenerator: promptIdGenerator,
 		promptRepository:  promptRepository,
+		billingClient:     billingClient,
 	}
 }
 
@@ -33,10 +35,22 @@ func (s *CreatePromptService) Execute(ctx context.Context, input CreatePromptInp
 	}
 
 	now := time.Now()
-	prompt, err := domain.NewPrompt(promptID, input.OwnerID, input.Title, promptTemplate, input.Tags, now, now)
+
+	err = s.billingClient.ReservePromptSlot(ctx, input.OwnerID)
 	if err != nil {
 		return domain.Prompt{}, err
 	}
+	prompt, err := domain.NewPrompt(promptID, input.OwnerID, input.Title, promptTemplate, input.Tags, now, now)
+	if err != nil {
+		_ = s.billingClient.ReleasePromptSlot(ctx, input.OwnerID)
+		return domain.Prompt{}, err
+	}
 
-	return s.promptRepository.Create(ctx, prompt)
+	prompt, err = s.promptRepository.Create(ctx, prompt)
+	if err != nil {
+		_ = s.billingClient.ReleasePromptSlot(ctx, input.OwnerID)
+		return domain.Prompt{}, err
+	}
+
+	return prompt, nil
 }

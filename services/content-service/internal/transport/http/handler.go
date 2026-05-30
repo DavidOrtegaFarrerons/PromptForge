@@ -69,6 +69,8 @@ func (h *PromptHandler) Create(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "title must be at most 64 characters", http.StatusUnprocessableEntity)
 		case errors.Is(err, domain.ErrContentEmpty):
 			http.Error(w, "content cannot be empty", http.StatusUnprocessableEntity)
+		case errors.Is(err, domain.ErrPromptLimitReached):
+			http.Error(w, "you have reached the prompt limit for your current plan", http.StatusPaymentRequired)
 		default:
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 		}
